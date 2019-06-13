@@ -14,7 +14,6 @@ def page_parser(soup)->set:
     извлекаем данные из страницы
     :return page_doc ->set(title, url, file, type_file, page_doc, date, id)
     '''
-
     all_doc = []
     for item in soup.findAll("div", {"class": "tr"})[1:]:
         try:
@@ -39,7 +38,6 @@ def page_parser(soup)->set:
 
 browser = webdriver.Firefox(executable_path=DRIVER)
 browser.get(URL)
-
 page_count = []
 with open(OUTPUT_FILE, 'w') as f:
     print('Начинаю парсить данные, ожидайте...')
