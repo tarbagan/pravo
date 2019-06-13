@@ -7,12 +7,14 @@ URL = 'http://publication.pravo.gov.ru/SignatoryAuthority/region17' #ссылк�
 COUNT = 3040 #всего документов на сайте по региону
 OUTPUT_FILE = 'pravo_doc.csv' #выходной файл
 PLUS_URL = 'http://publication.pravo.gov.ru{}'
+DRIVER = r'D:\AnacodaProgect\geckodriver.exe' #драйвер для Firefox https://github.com/mozilla/geckodriver/releases
 
-def page_parser(soup):
+def page_parser(soup)->set:
     '''
     извлекаем данные из страницы
     :return page_doc ->set(title, url, file, type_file, page_doc, date, id)
     '''
+
     all_doc = []
     for item in soup.findAll("div", {"class": "tr"})[1:]:
         try:
@@ -35,21 +37,23 @@ def page_parser(soup):
             print (e)
     return all_doc
 
-driver = r'D:\AnacodaProgect\geckodriver.exe' #драйвер для Firefox https://github.com/mozilla/geckodriver/releases
-browser = webdriver.Firefox(executable_path=driver)
+browser = webdriver.Firefox(executable_path=DRIVER)
 browser.get(URL)
 
 page_count = []
 with open(OUTPUT_FILE, 'w') as f:
     print('Начинаю парсить данные, ожидайте...')
-    for pagination in range(1, (COUNT//30)+1):
-        time.sleep(4)
-        browser.find_element_by_class_name("page-nave-next").click()
-        soup = bs( browser.page_source, 'lxml')
-        for doc in (page_parser(soup)):
-            stroka = '|'.join(doc)
-            page_count.append(stroka)
-            print ('Получено {} документов из {}'.format(len(page_count),COUNT))
-            f.write(stroka + '\n')
-            
+    for pagination in range(1, (COUNT//30)+2):
+        try:
+            time.sleep(2) #ожидание
+            browser.find_element_by_class_name("page-nave-next").click()
+            soup = bs( browser.page_source, 'lxml')
+            for doc in (page_parser(soup)):
+                stroka = '|'.join(doc)
+                page_count.append(stroka)
+                print ('Получено {} документов из {}'.format(len(page_count),COUNT))
+                f.write(stroka + '\n')
+        except Exception as e:
+            print (e)
+
 print('Описательная часть {} правовых актов региона получена'.format(len(page_count)))
