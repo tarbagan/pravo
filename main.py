@@ -1,57 +1,58 @@
-from selenium import webdriver
+import requests
 from bs4 import BeautifulSoup as bs
-import time
-import re
 
-URL = 'http://publication.pravo.gov.ru/SignatoryAuthority/region17' #ссылка на ваш регион
-COUNT = 3040 #всего документов на сайте по региону
-OUTPUT_FILE = 'pravo_doc.csv' #выходной файл
-PLUS_URL = 'http://publication.pravo.gov.ru{}'
-DRIVER = r'D:\AnacodaProgect\geckodriver.exe' #драйвер для Firefox https://github.com/mozilla/geckodriver/releases
 
-def page_parser(soup)->set:
-    '''
-    извлекаем данные из страницы
-    :return page_doc ->set(title, url, file, type_file, page_doc, date, id)
-    '''
-    all_doc = []
-    for item in soup.findAll("div", {"class": "tr"})[1:]:
-        try:
-            content = item.find( "div", {"class": "td vis"})
-            title = content.find('a').text
-            url = content.find( 'a' ).get('href')
-            url = PLUS_URL.format(url)
-            file = content.find('span', attrs={'class': 'notforprint'}).find('a').get('href')
-            file = PLUS_URL.format(file)
-            type_file = content.find( 'span', attrs={'class': 'notforprint'} ).find( 'a' ).text
-            page_doc = content.find( 'span', attrs={'class': 'pagesindoccount'} ).text
-            page_doc = re.findall('(\d+)', page_doc)[0]
-            id = item.find( "div", {"class": "td vis notforprint"})\
-                .find('span', attrs={'class': 'pagesindoccount information'}).text
-            date = item.find( "div", {"class": "td vis notforprint"})\
-                .findAll('span', attrs={'class': 'pagesindoccount information'})[1].text
-            doc = (id, title, date, url, file, type_file, page_doc)
-            all_doc.append(doc)
-        except Exception as e:
-            print (e)
-    return all_doc
+START_PAGE = 'http://publication.pravo.gov.ru/SignatoryAuthority/region17'
 
-browser = webdriver.Firefox(executable_path=DRIVER)
-browser.get(URL)
-page_count = []
-with open(OUTPUT_FILE, 'w') as f:
-    print('Начинаю парсить данные, ожидайте...')
-    for pagination in range(1, (COUNT//30)+2):
-        try:
-            time.sleep(2) #ожидание
-            browser.find_element_by_class_name("page-nave-next").click()
-            soup = bs( browser.page_source, 'lxml')
-            for doc in (page_parser(soup)):
-                stroka = '|'.join(doc)
-                page_count.append(stroka)
-                print ('Получено {} документов из {}'.format(len(page_count),COUNT))
-                f.write(stroka + '\n')
-        except Exception as e:
-            print (e)
 
-print('Описательная часть {} правовых актов региона получена'.format(len(page_count)))
+headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 '
+                         '(KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
+
+params = {'method': 'GET',
+          'credentials': 'include',
+          'X-Requested-With': 'XMLHttpRequest'}
+
+s = requests.Session()
+s.params.update(params)
+s.headers.update(headers)
+
+
+
+def get_page(url):
+    data = s.get(url).text
+    soup = bs(data, 'lxml')
+    return soup
+
+
+def get_pagi():
+    """Получаем количество страниц"""
+    page = get_page(START_PAGE)
+    data = page.find('div', {'class': 'page-nave-count'}).text
+    item_count = int(data.split()[-1])
+    return item_count
+
+
+def get_items(data_soup):
+    """извлекаем данные из страницы"""
+    docs = []
+    for items in data_soup.findAll('div', {'class': 'tr'}):
+        data = items.findAll('a', {'class': 'choosedocument'})
+        if data:
+            for i in data:
+                url_doc = 'http://publication.pravo.gov.ru{}'.format(i.get('href'))
+                title_doc = i.text
+                if title_doc:
+                    doc = {'title': title_doc, 'url': url_doc}
+                    docs.append(doc)
+    return docs
+
+
+for page in range(1, get_pagi()//30):
+    url = 'http://publication.pravo.gov.ru/Search/DocumentSearchResult?SearchObject.IsShowAppendPageCountList=true&' \
+         'SearchObject.IsLastUpdateList=true&SearchObject.NavigationSignatoryAuthorityCode=region17&' \
+         'SearchObject.NavigationSignatoryAuthorityId=&SearchObject.NavigationSignatoryAuthorityCategory=&' \
+         'SearchObject.SelectedSignatoryAuthorityId=00000000-0000-0000-0000-000000000000&SearchObject.RangeSize=30&' \
+         'SearchObject.CurrentPageNumber={}&_=1597736552634'.format(page)
+    soup = get_page(url)
+    for i in get_items(soup):
+        print(i)
