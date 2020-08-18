@@ -31,18 +31,20 @@ def get_pagi():
     item_count = int(data.split()[-1])
     return item_count
 
-
+  
 def get_items(data_soup):
     """извлекаем данные из страницы"""
     docs = []
     for items in data_soup.findAll('div', {'class': 'tr'}):
         data = items.findAll('a', {'class': 'choosedocument'})
+        file = items.find('a', {'class': 'navigation'})
         if data:
             for i in data:
                 url_doc = 'http://publication.pravo.gov.ru{}'.format(i.get('href'))
                 title_doc = i.text
+                file_url = 'http://publication.pravo.gov.ru{}'.format(file.get('href'))
                 if title_doc:
-                    doc = {'title': title_doc, 'url': url_doc}
+                    doc = {'title': title_doc, 'url': url_doc, 'file': file_url}
                     docs.append(doc)
     return docs
 
