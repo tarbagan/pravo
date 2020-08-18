@@ -1,9 +1,9 @@
 import requests
 from bs4 import BeautifulSoup as bs
 
+file_out = 'base.txt'
 
 START_PAGE = 'http://publication.pravo.gov.ru/SignatoryAuthority/region17'
-
 
 headers = {'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_1) AppleWebKit/537.36 '
                          '(KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36'}
@@ -31,7 +31,7 @@ def get_pagi():
     item_count = int(data.split()[-1])
     return item_count
 
-  
+
 def get_items(data_soup):
     """извлекаем данные из страницы"""
     docs = []
@@ -49,12 +49,14 @@ def get_items(data_soup):
     return docs
 
 
-for page in range(1, get_pagi()//30):
-    url = 'http://publication.pravo.gov.ru/Search/DocumentSearchResult?SearchObject.IsShowAppendPageCountList=true&' \
-         'SearchObject.IsLastUpdateList=true&SearchObject.NavigationSignatoryAuthorityCode=region17&' \
-         'SearchObject.NavigationSignatoryAuthorityId=&SearchObject.NavigationSignatoryAuthorityCategory=&' \
-         'SearchObject.SelectedSignatoryAuthorityId=00000000-0000-0000-0000-000000000000&SearchObject.RangeSize=30&' \
-         'SearchObject.CurrentPageNumber={}&_=1597736552634'.format(page)
-    soup = get_page(url)
-    for i in get_items(soup):
-        print(i)
+with open(file_out, 'w', encoding='utf-8') as f:
+    for page in range(1, get_pagi()//30):
+        url = 'http://publication.pravo.gov.ru/Search/DocumentSearchResult?SearchObject.IsShowAppendPageCountList=true&' \
+             'SearchObject.IsLastUpdateList=true&SearchObject.NavigationSignatoryAuthorityCode=region17&' \
+             'SearchObject.NavigationSignatoryAuthorityId=&SearchObject.NavigationSignatoryAuthorityCategory=&' \
+             'SearchObject.SelectedSignatoryAuthorityId=00000000-0000-0000-0000-000000000000&SearchObject.RangeSize=30&' \
+             'SearchObject.CurrentPageNumber={}&_=1597736552634'.format(page)
+        soup = get_page(url)
+        for i in get_items(soup):
+            print(i)
+            f.write(str(i) + '\n')
