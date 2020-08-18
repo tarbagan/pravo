@@ -15,7 +15,7 @@ params = {'method': 'GET',
 s = requests.Session()
 s.params.update(params)
 s.headers.update(headers)
-
+s.proxies.update({'https': 'http://irgit:irgit@134.0.112.62:3128'})
 
 
 def get_page(url):
